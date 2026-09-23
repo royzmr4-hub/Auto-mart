@@ -1,0 +1,1430 @@
+// ==========================================
+// AUTO MART
+// SUPABASE CONFIG
+// ==========================================
+
+const SUPABASE_URL = "https://gavemonetsfnpfzsmzyv.supabase.co/rest/v1/";
+
+const SUPABASE_KEY = "sb_publishable_aK8QLBFOiAcmX6KQh1SJeg_M6vMd_ZU";
+
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+// ==========================================
+// GLOBAL STATE
+// ==========================================
+
+let products = [];
+
+let cart =
+  JSON.parse(
+    localStorage.getItem("autoMartCart")
+  ) || [];
+
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+function formatPrice(price) {
+
+  return (
+    new Intl.NumberFormat("mn-MN")
+      .format(Number(price)) + " ₮"
+  );
+
+}
+
+
+function saveCart() {
+
+  localStorage.setItem(
+    "autoMartCart",
+    JSON.stringify(cart)
+  );
+
+}
+
+
+function escapeHTML(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function showToast(message) {
+
+  const toast =
+    document.getElementById("toast");
+
+  if (!toast) {
+
+    alert(message);
+
+    return;
+
+  }
+
+  toast.textContent = message;
+
+  toast.classList.add("show");
+
+
+  setTimeout(() => {
+
+    toast.classList.remove("show");
+
+  }, 2500);
+
+}
+
+
+// ==========================================
+// LOAD PRODUCTS
+// ==========================================
+
+async function loadProducts() {
+
+  const productGrid =
+    document.getElementById("productGrid");
+
+
+  if (!productGrid) return;
+
+
+  productGrid.innerHTML = `
+    <div class="loading">
+      Бараа ачаалж байна...
+    </div>
+  `;
+
+
+  const {
+    data,
+    error
+  } = await supabaseClient
+    .from("products")
+    .select("*")
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
+
+
+  if (error) {
+
+    console.error(error);
+
+    productGrid.innerHTML = `
+      <div class="empty-state">
+        <h3>Алдаа гарлаа</h3>
+        <p>
+          Supabase тохиргоогоо шалгана уу.
+        </p>
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  products = data || [];
+
+
+  renderProducts(products);
+
+  renderCart();
+
+}
+
+
+// ==========================================
+// RENDER PRODUCTS
+// ==========================================
+
+function renderProducts(list) {
+
+  const productGrid =
+    document.getElementById("productGrid");
+
+
+  if (!productGrid) return;
+
+
+  if (!list.length) {
+
+    productGrid.innerHTML = `
+      <div class="empty-state">
+        <h3>Бараа олдсонгүй</h3>
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  productGrid.innerHTML =
+    list.map(product => {
+
+      const stock =
+        Number(product.stock || 0);
+
+
+      return `
+
+        <article class="product-card">
+
+          <div class="product-image">
+
+            <img
+              src="${
+                escapeHTML(
+                  product.image_url ||
+                  "https://via.placeholder.com/600x400?text=Auto+Mart"
+                )
+              }"
+              alt="${escapeHTML(product.name)}"
+              loading="lazy"
+              onerror="
+                this.src='https://via.placeholder.com/600x400?text=No+Image'
+              "
+            />
+
+          </div>
+
+
+          <div class="product-info">
+
+            <span class="product-category">
+
+              ${
+                escapeHTML(
+                  product.category ||
+                  "Auto Parts"
+                )
+              }
+
+            </span>
+
+
+            <h3>
+              ${escapeHTML(product.name)}
+            </h3>
+
+
+            <p class="product-description">
+
+              ${
+                escapeHTML(
+                  product.description || ""
+                )
+              }
+
+            </p>
+
+
+            <div class="product-bottom">
+
+              <strong class="product-price">
+
+                ${formatPrice(product.price)}
+
+              </strong>
+
+
+              ${
+                stock > 0
+
+                ? `
+
+                  <button
+                    class="add-cart-btn"
+                    onclick="addToCart(${product.id})"
+                  >
+                    Сагсанд нэмэх
+                  </button>
+
+                `
+
+                : `
+
+                  <button
+                    class="add-cart-btn disabled"
+                    disabled
+                  >
+                    Дууссан
+                  </button>
+
+                `
+              }
+
+            </div>
+
+          </div>
+
+        </article>
+
+      `;
+
+    }).join("");
+
+}
+
+
+// ==========================================
+// SEARCH
+// ==========================================
+
+function searchProducts() {
+
+  const input =
+    document.getElementById("searchInput");
+
+
+  if (!input) return;
+
+
+  const query =
+    input.value
+      .toLowerCase()
+      .trim();
+
+
+  const filtered =
+    products.filter(product => {
+
+      return (
+
+        String(product.name || "")
+          .toLowerCase()
+          .includes(query)
+
+        ||
+
+        String(product.description || "")
+          .toLowerCase()
+          .includes(query)
+
+        ||
+
+        String(product.category || "")
+          .toLowerCase()
+          .includes(query)
+
+      );
+
+    });
+
+
+  renderProducts(filtered);
+
+}
+
+
+// ==========================================
+// CART
+// ==========================================
+
+function addToCart(productId) {
+
+  const product =
+    products.find(
+      item =>
+        Number(item.id) ===
+        Number(productId)
+    );
+
+
+  if (!product) {
+
+    showToast("Бараа олдсонгүй.");
+
+    return;
+
+  }
+
+
+  const stock =
+    Number(product.stock || 0);
+
+
+  if (stock <= 0) {
+
+    showToast(
+      "Энэ бараа дууссан байна."
+    );
+
+    return;
+
+  }
+
+
+  const existing =
+    cart.find(
+      item =>
+        Number(item.id) ===
+        Number(productId)
+    );
+
+
+  if (existing) {
+
+    if (
+      existing.quantity >= stock
+    ) {
+
+      showToast(
+        "Үлдэгдэл хүрэлцэхгүй байна."
+      );
+
+      return;
+
+    }
+
+
+    existing.quantity++;
+
+  }
+
+  else {
+
+    cart.push({
+
+      id: product.id,
+
+      name: product.name,
+
+      price:
+        Number(product.price),
+
+      image_url:
+        product.image_url,
+
+      quantity: 1
+
+    });
+
+  }
+
+
+  saveCart();
+
+  renderCart();
+
+  showToast(
+    "Сагсанд нэмэгдлээ ✓"
+  );
+
+}
+
+
+// ==========================================
+// RENDER CART
+// ==========================================
+
+function renderCart() {
+
+  const cartItems =
+    document.getElementById(
+      "cartItems"
+    );
+
+
+  const cartCount =
+    document.getElementById(
+      "cartCount"
+    );
+
+
+  const cartTotal =
+    document.getElementById(
+      "cartTotal"
+    );
+
+
+  const totalItems =
+    cart.reduce(
+      (sum, item) =>
+        sum + Number(item.quantity),
+      0
+    );
+
+
+  const totalPrice =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.price) *
+        Number(item.quantity),
+      0
+    );
+
+
+  if (cartCount) {
+
+    cartCount.textContent =
+      totalItems;
+
+  }
+
+
+  if (cartTotal) {
+
+    cartTotal.textContent =
+      formatPrice(totalPrice);
+
+  }
+
+
+  if (!cartItems) return;
+
+
+  if (!cart.length) {
+
+    cartItems.innerHTML = `
+
+      <div class="empty-cart">
+
+        <h3>
+          Сагс хоосон байна
+        </h3>
+
+        <p>
+          Бүтээгдэхүүн нэмнэ үү.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  cartItems.innerHTML =
+    cart.map(item => `
+
+      <div class="cart-item">
+
+        <img
+          src="${
+            escapeHTML(
+              item.image_url ||
+              "https://via.placeholder.com/100"
+            )
+          }"
+          alt="${escapeHTML(item.name)}"
+        />
+
+
+        <div class="cart-item-info">
+
+          <h4>
+            ${escapeHTML(item.name)}
+          </h4>
+
+
+          <strong>
+            ${formatPrice(item.price)}
+          </strong>
+
+
+          <div class="quantity-controls">
+
+            <button
+              onclick="
+                changeQuantity(${item.id}, -1)
+              "
+            >
+              −
+            </button>
+
+
+            <span>
+              ${item.quantity}
+            </span>
+
+
+            <button
+              onclick="
+                changeQuantity(${item.id}, 1)
+              "
+            >
+              +
+            </button>
+
+          </div>
+
+
+          <button
+            class="remove-cart"
+            onclick="
+              removeFromCart(${item.id})
+            "
+          >
+            Устгах
+          </button>
+
+        </div>
+
+      </div>
+
+    `).join("");
+
+}
+
+
+// ==========================================
+// CHANGE QUANTITY
+// ==========================================
+
+function changeQuantity(
+  productId,
+  amount
+) {
+
+  const item =
+    cart.find(
+      item =>
+        Number(item.id) ===
+        Number(productId)
+    );
+
+
+  if (!item) return;
+
+
+  const product =
+    products.find(
+      product =>
+        Number(product.id) ===
+        Number(productId)
+    );
+
+
+  const stock =
+    product
+      ? Number(product.stock || 0)
+      : 999;
+
+
+  item.quantity += amount;
+
+
+  if (item.quantity <= 0) {
+
+    cart =
+      cart.filter(
+        cartItem =>
+          Number(cartItem.id) !==
+          Number(productId)
+      );
+
+  }
+
+
+  if (item.quantity > stock) {
+
+    item.quantity = stock;
+
+    showToast(
+      "Үлдэгдэл хүрэлцэхгүй байна."
+    );
+
+  }
+
+
+  saveCart();
+
+  renderCart();
+
+}
+
+
+// ==========================================
+// REMOVE
+// ==========================================
+
+function removeFromCart(productId) {
+
+  cart =
+    cart.filter(
+      item =>
+        Number(item.id) !==
+        Number(productId)
+    );
+
+
+  saveCart();
+
+  renderCart();
+
+  showToast(
+    "Сагснаас хасагдлаа."
+  );
+
+}
+
+
+// ==========================================
+// CART OPEN / CLOSE
+// ==========================================
+
+function openCart() {
+
+  const drawer =
+    document.getElementById(
+      "cartDrawer"
+    );
+
+
+  if (drawer) {
+
+    drawer.classList.add("open");
+
+  }
+
+}
+
+
+function closeCart() {
+
+  const drawer =
+    document.getElementById(
+      "cartDrawer"
+    );
+
+
+  if (drawer) {
+
+    drawer.classList.remove("open");
+
+  }
+
+}
+
+
+// ==========================================
+// CHECKOUT
+// ==========================================
+
+function openCheckout() {
+
+  if (!cart.length) {
+
+    showToast(
+      "Сагс хоосон байна."
+    );
+
+    return;
+
+  }
+
+
+  const modal =
+    document.getElementById(
+      "checkoutModal"
+    );
+
+
+  if (!modal) return;
+
+
+  updateCheckoutSummary();
+
+  modal.classList.add("open");
+
+  closeCart();
+
+}
+
+
+function closeCheckout() {
+
+  const modal =
+    document.getElementById(
+      "checkoutModal"
+    );
+
+
+  if (modal) {
+
+    modal.classList.remove("open");
+
+  }
+
+}
+
+
+function updateCheckoutSummary() {
+
+  const items =
+    document.getElementById(
+      "checkoutItems"
+    );
+
+
+  const totalElement =
+    document.getElementById(
+      "checkoutTotal"
+    );
+
+
+  const total =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.price) *
+        Number(item.quantity),
+      0
+    );
+
+
+  if (totalElement) {
+
+    totalElement.textContent =
+      formatPrice(total);
+
+  }
+
+
+  if (!items) return;
+
+
+  items.innerHTML =
+    cart.map(item => `
+
+      <div class="checkout-item">
+
+        <span>
+          ${escapeHTML(item.name)}
+          × ${item.quantity}
+        </span>
+
+        <strong>
+          ${formatPrice(
+            item.price *
+            item.quantity
+          )}
+        </strong>
+
+      </div>
+
+    `).join("");
+
+}
+
+
+// ==========================================
+// CREATE ORDER
+// ==========================================
+
+async function submitOrder(event) {
+
+  event.preventDefault();
+
+
+  if (!cart.length) {
+
+    showToast(
+      "Сагс хоосон байна."
+    );
+
+    return;
+
+  }
+
+
+  const name =
+    document.getElementById(
+      "customerName"
+    );
+
+
+  const phone =
+    document.getElementById(
+      "customerPhone"
+    );
+
+
+  const address =
+    document.getElementById(
+      "customerAddress"
+    );
+
+
+  const payment =
+    document.querySelector(
+      'input[name="payment"]:checked'
+    );
+
+
+  if (
+    !name ||
+    !phone ||
+    !address
+  ) {
+
+    showToast(
+      "Form олдсонгүй."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !name.value.trim() ||
+    !phone.value.trim() ||
+    !address.value.trim()
+  ) {
+
+    showToast(
+      "Мэдээллээ бүрэн бөглөнө үү."
+    );
+
+    return;
+
+  }
+
+
+  const total =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.price) *
+        Number(item.quantity),
+      0
+    );
+
+
+  const {
+    data: order,
+    error
+  } =
+    await supabaseClient
+      .from("orders")
+      .insert({
+
+        customer_name:
+          name.value.trim(),
+
+        phone:
+          phone.value.trim(),
+
+        address:
+          address.value.trim(),
+
+        payment_method:
+          payment
+            ? payment.value
+            : "cod",
+
+        total:
+          total,
+
+        status:
+          "pending"
+
+      })
+      .select()
+      .single();
+
+
+  if (error) {
+
+    console.error(error);
+
+    showToast(
+      "Захиалга үүсгэхэд алдаа гарлаа."
+    );
+
+    return;
+
+  }
+
+
+  const orderItems =
+    cart.map(item => ({
+
+      order_id:
+        order.id,
+
+      product_id:
+        item.id,
+
+      quantity:
+        item.quantity,
+
+      price:
+        Number(item.price)
+
+    }));
+
+
+  const {
+    error: itemError
+  } =
+    await supabaseClient
+      .from("order_items")
+      .insert(orderItems);
+
+
+  if (itemError) {
+
+    console.error(itemError);
+
+    showToast(
+      "Захиалгын барааг хадгалахад алдаа гарлаа."
+    );
+
+    return;
+
+  }
+
+
+  cart = [];
+
+  saveCart();
+
+  renderCart();
+
+  closeCheckout();
+
+
+  const form =
+    document.getElementById(
+      "checkoutForm"
+    );
+
+
+  if (form) {
+
+    form.reset();
+
+  }
+
+
+  showToast(
+    `Захиалга амжилттай! #${order.id}`
+  );
+
+}
+
+
+// ==========================================
+// ADMIN - ADD PRODUCT
+// ==========================================
+
+async function addProduct(event) {
+
+  event.preventDefault();
+
+
+  const name =
+    document.getElementById(
+      "productName"
+    );
+
+
+  const price =
+    document.getElementById(
+      "productPrice"
+    );
+
+
+  const category =
+    document.getElementById(
+      "productCategory"
+    );
+
+
+  const stock =
+    document.getElementById(
+      "productStock"
+    );
+
+
+  const image =
+    document.getElementById(
+      "productImage"
+    );
+
+
+  const description =
+    document.getElementById(
+      "productDescription"
+    );
+
+
+  const product = {
+
+    name:
+      name.value.trim(),
+
+    price:
+      Number(price.value),
+
+    category:
+      category
+        ? category.value.trim()
+        : "Auto Parts",
+
+    stock:
+      stock
+        ? Number(stock.value)
+        : 0,
+
+    image_url:
+      image
+        ? image.value.trim()
+        : "",
+
+    description:
+      description
+        ? description.value.trim()
+        : ""
+
+  };
+
+
+  if (
+    !product.name ||
+    !product.price
+  ) {
+
+    showToast(
+      "Нэр болон үнэ оруулна уу."
+    );
+
+    return;
+
+  }
+
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from("products")
+      .insert(product);
+
+
+  if (error) {
+
+    console.error(error);
+
+    showToast(
+      "Бараа нэмэхэд алдаа гарлаа."
+    );
+
+    return;
+
+  }
+
+
+  showToast(
+    "Бараа амжилттай нэмэгдлээ ✓"
+  );
+
+
+  document
+    .getElementById("productForm")
+    ?.reset();
+
+
+  loadAdminProducts();
+
+}
+
+
+// ==========================================
+// ADMIN - LOAD PRODUCTS
+// ==========================================
+
+async function loadAdminProducts() {
+
+  const list =
+    document.getElementById(
+      "adminProductList"
+    );
+
+
+  if (!list) return;
+
+
+  list.innerHTML = `
+    <div class="loading">
+      Бараа ачаалж байна...
+    </div>
+  `;
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("products")
+      .select("*")
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (error) {
+
+    console.error(error);
+
+    list.innerHTML = `
+      <p>
+        Бараа ачааллахад алдаа гарлаа.
+      </p>
+    `;
+
+    return;
+
+  }
+
+
+  if (!data.length) {
+
+    list.innerHTML = `
+      <p>
+        Одоогоор бараа алга.
+      </p>
+    `;
+
+    return;
+
+  }
+
+
+  list.innerHTML =
+    data.map(product => `
+
+      <div class="admin-product">
+
+        <img
+          src="${
+            escapeHTML(
+              product.image_url ||
+              "https://via.placeholder.com/100"
+            )
+          }"
+          alt="${escapeHTML(product.name)}"
+        />
+
+
+        <div>
+
+          <h3>
+            ${escapeHTML(product.name)}
+          </h3>
+
+          <p>
+            ${formatPrice(product.price)}
+          </p>
+
+          <p>
+            Үлдэгдэл:
+            ${product.stock}
+          </p>
+
+        </div>
+
+
+        <button
+          onclick="
+            deleteProduct(${product.id})
+          "
+        >
+          Устгах
+        </button>
+
+      </div>
+
+    `).join("");
+
+}
+
+
+// ==========================================
+// ADMIN - DELETE
+// ==========================================
+
+async function deleteProduct(
+  productId
+) {
+
+  const confirmed =
+    confirm(
+      "Энэ бүтээгдэхүүнийг устгах уу?"
+    );
+
+
+  if (!confirmed) return;
+
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from("products")
+      .delete()
+      .eq(
+        "id",
+        productId
+      );
+
+
+  if (error) {
+
+    console.error(error);
+
+    showToast(
+      "Устгахад алдаа гарлаа."
+    );
+
+    return;
+
+  }
+
+
+  showToast(
+    "Бараа устгагдлаа."
+  );
+
+
+  loadAdminProducts();
+
+}
+
+
+// ==========================================
+// INITIALIZE
+// ==========================================
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    // Storefront
+
+    if (
+      document.getElementById(
+        "productGrid"
+      )
+    ) {
+
+      loadProducts();
+
+
+      const searchInput =
+        document.getElementById(
+          "searchInput"
+        );
+
+
+      if (searchInput) {
+
+        searchInput.addEventListener(
+          "input",
+          searchProducts
+        );
+
+      }
+
+    }
+
+
+    // Admin
+
+    if (
+      document.getElementById(
+        "adminProductList"
+      )
+    ) {
+
+      loadAdminProducts();
+
+    }
+
+
+    // Checkout
+
+    const checkoutForm =
+      document.getElementById(
+        "checkoutForm"
+      );
+
+
+    if (checkoutForm) {
+
+      checkoutForm.addEventListener(
+        "submit",
+        submitOrder
+      );
+
+    }
+
+  }
+);
+
+
+// ==========================================
+// GLOBAL FUNCTIONS
+// ==========================================
+
+window.addToCart =
+  addToCart;
+
+window.changeQuantity =
+  changeQuantity;
+
+window.removeFromCart =
+  removeFromCart;
+
+window.openCart =
+  openCart;
+
+window.closeCart =
+  closeCart;
+
+window.openCheckout =
+  openCheckout;
+
+window.closeCheckout =
+  closeCheckout;
+
+window.addProduct =
+  addProduct;
+
+window.deleteProduct =
+  deleteProduct;
+
+window.loadProducts =
+  loadProducts;
+
+window.loadAdminProducts =
+  loadAdminProducts;
