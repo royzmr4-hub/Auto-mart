@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Mart Admin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <div class="container">
+    <h1>Auto Mart Admin</h1>
+    <a href="index.html">Store</a>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- LOGIN -->
+  <section id="loginSection">
+    <h2>Admin Login</h2>
+
+    <form id="loginForm">
+      <input
+        type="email"
+        id="loginEmail"
+        placeholder="Email"
+        required
+      >
+
+      <input
+        type="password"
+        id="loginPassword"
+        placeholder="Password"
+        required
+      >
+
+      <button type="submit">Нэвтрэх</button>
+    </form>
+  </section>
+
+  <!-- ADMIN PANEL -->
+  <section id="adminSection" style="display:none;">
+
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>Admin Panel</h2>
+      <button id="logoutBtn">Гарах</button>
+    </div>
+
+    <hr>
+
+    <h3>Шинэ бараа нэмэх</h3>
+
+    <form id="productForm">
+
+      <input
+        type="text"
+        id="productName"
+        placeholder="Барааны нэр"
+        required
+      >
+
+      <input
+        type="number"
+        id="productPrice"
+        placeholder="Үнэ"
+        min="0"
+        required
+      >
+
+      <input
+        type="text"
+        id="productCategory"
+        placeholder="Ангилал"
+      >
+
+      <input
+        type="number"
+        id="productStock"
+        placeholder="Үлдэгдэл"
+        min="0"
+        value="0"
+      >
+
+      <input
+        type="url"
+        id="productImage"
+        placeholder="Зургийн URL (түр алгасаж болно)"
+      >
+
+      <textarea
+        id="productDescription"
+        placeholder="Тайлбар"
+      ></textarea>
+
+      <button type="submit">Бараа нэмэх</button>
+
+    </form>
+
+    <hr>
+
+    <h3>Барааны жагсаалт</h3>
+
+    <button onclick="loadAdminProducts()">
+      Refresh
+    </button>
+
+    <div id="adminProductList"></div>
+
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
