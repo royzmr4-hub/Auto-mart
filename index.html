@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Auto Mart | Авто сэлбэг</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+
+    <div class="container header-inner">
+
+      <a href="index.html" class="logo">
+        🚗 Auto Mart
+      </a>
+
+      <nav class="nav">
+        <a href="index.html">Нүүр</a>
+        <a href="admin.html">Admin</a>
+      </nav>
+
+      <button class="cart-button" onclick="openCart()">
+        🛒 Сагс
+        <span id="cartCount">0</span>
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- HERO -->
+  <section class="hero">
+
+    <div class="container">
+
+      <div class="hero-content">
+
+        <span class="hero-badge">
+          🚘 Auto Parts Store
+        </span>
+
+        <h1>
+          Таны машинд хэрэгтэй
+          <span>бүх сэлбэг</span>
+        </h1>
+
+        <p>
+          Чанартай авто сэлбэгийг хурдан,
+          найдвартай захиалаарай.
+        </p>
+
+        <a href="#products" class="hero-button">
+          Бараа үзэх
+        </a>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- PRODUCTS -->
+  <main id="products" class="container products-section">
+
+    <div class="section-header">
+
+      <div>
+        <span class="section-label">
+          OUR PRODUCTS
+        </span>
+
+        <h2>
+          Авто сэлбэг
+        </h2>
+      </div>
+
+      <div class="search-box">
+
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Сэлбэг хайх..."
+        />
+
+        <span>🔍</span>
+
+      </div>
+
+    </div>
+
+
+    <!-- Supabase products -->
+    <div
+      id="productGrid"
+      class="product-grid"
+    >
+      <div class="loading">
+        Бараа ачаалж байна...
+      </div>
+    </div>
+
+  </main>
+
+
+  <!-- CART DRAWER -->
+  <aside
+    id="cartDrawer"
+    class="cart-drawer"
+  >
+
+    <div class="cart-header">
+
+      <h2>
+        🛒 Таны сагс
+      </h2>
+
+      <button
+        onclick="closeCart()"
+        class="close-button"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div
+      id="cartItems"
+      class="cart-items"
+    >
+      <div class="empty-cart">
+        Сагс хоосон байна.
+      </div>
+    </div>
+
+
+    <div class="cart-footer">
+
+      <div class="cart-total-row">
+
+        <span>
+          Нийт:
+        </span>
+
+        <strong id="cartTotal">
+          0 ₮
+        </strong>
+
+      </div>
+
+      <button
+        class="checkout-button"
+        onclick="openCheckout()"
+      >
+        Захиалга өгөх
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- CHECKOUT MODAL -->
+  <div
+    id="checkoutModal"
+    class="modal"
+  >
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h2>
+          Захиалга
+        </h2>
+
+        <button
+          onclick="closeCheckout()"
+          class="close-button"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div
+        id="checkoutItems"
+        class="checkout-items"
+      ></div>
+
+
+      <div class="checkout-total">
+
+        <span>
+          Нийт:
+        </span>
+
+        <strong id="checkoutTotal">
+          0 ₮
+        </strong>
+
+      </div>
+
+
+      <form id="checkoutForm">
+
+        <div class="form-group">
+
+          <label for="customerName">
+            Нэр
+          </label>
+
+          <input
+            id="customerName"
+            type="text"
+            placeholder="Таны нэр"
+            required
+          />
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="customerPhone">
+            Утас
+          </label>
+
+          <input
+            id="customerPhone"
+            type="tel"
+            placeholder="99112233"
+            required
+          />
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="customerAddress">
+            Хаяг
+          </label>
+
+          <textarea
+            id="customerAddress"
+            placeholder="Хүргэлтийн хаяг"
+            required
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label>
+            Төлбөрийн хэлбэр
+          </label>
+
+
+          <label class="payment-option">
+
+            <input
+              type="radio"
+              name="payment"
+              value="qpay"
+              checked
+            />
+
+            <span>
+              QPay
+            </span>
+
+          </label>
+
+
+          <label class="payment-option">
+
+            <input
+              type="radio"
+              name="payment"
+              value="card"
+            />
+
+            <span>
+              💳 Карт
+            </span>
+
+          </label>
+
+
+          <label class="payment-option">
+
+            <input
+              type="radio"
+              name="payment"
+              value="cod"
+            />
+
+            <span>
+              💵 Хүргэлтээр төлөх
+            </span>
+
+          </label>
+
+
+          <label class="payment-option">
+
+            <input
+              type="radio"
+              name="payment"
+              value="bnpl"
+            />
+
+            <span>
+              BNPL
+            </span>
+
+          </label>
+
+        </div>
+
+
+        <button
+          type="submit"
+          class="submit-order-button"
+        >
+          Захиалга баталгаажуулах
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- TOAST -->
+  <div
+    id="toast"
+    class="toast"
+  ></div>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+
+    <div class="container">
+
+      <h3>
+        🚗 Auto Mart
+      </h3>
+
+      <p>
+        Таны найдвартай авто сэлбэгийн дэлгүүр.
+      </p>
+
+      <p>
+        © 2026 Auto Mart
+      </p>
+
+    </div>
+
+  </footer>
+
+
+  <!-- SUPABASE -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+  <!-- APP -->
+  <script src="app.js"></script>
+
+</body>
+</html>
